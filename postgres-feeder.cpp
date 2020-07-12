@@ -62,7 +62,7 @@ class TPostgreSQL
 			if(verbose)
 				fprintf(stderr, "[PQ] %s\n", PQcmdStatus(res));
 
-			if(PQresultStatus(res) != PGRES_COMMAND_OK)
+			if(PQresultStatus(res) != PGRES_COMMAND_OK && PQresultStatus(res) != PGRES_TUPLES_OK)
 			{
 				PQclear(res);
 				throw mkstrcpy(PQerrorMessage(conn));
@@ -99,6 +99,8 @@ int main(int argc, char* argv[])
 	signal(SIGQUIT, &OnSignal);
 	signal(SIGHUP,  &OnSignal);
 	signal(SIGPIPE, &OnSignal);
+
+	close(STDOUT_FILENO);
 
 	try
 	{
