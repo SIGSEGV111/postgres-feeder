@@ -22,7 +22,7 @@
 
 	create table sensor_data
 	(
-		time     TIMESTAMPTZ       NOT NULL,
+		time TIMESTAMPTZ NOT NULL,
 		location text not null,
 		sensor   text not null,
 		measurand text not null,
