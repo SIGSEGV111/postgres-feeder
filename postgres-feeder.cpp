@@ -82,8 +82,6 @@ class TPostgreSQL
 			va_end(list);
 
 			PGresult* res = PQexec(conn, buffer);
-			if(verbose)
-				fprintf(stderr, "[PQ] %s\n", PQcmdStatus(res));
 
 			if(PQresultStatus(res) != PGRES_COPY_IN)
 			{
@@ -102,10 +100,7 @@ class TPostgreSQL
 
 			res = PQgetResult(conn);
 
-			if(verbose)
-				fprintf(stderr, "[PQ] %s\n", PQcmdStatus(res));
-
-			if(PQresultStatus(res) != PGRES_COPY_IN)
+			if(PQresultStatus(res) != PGRES_COMMAND_OK)
 			{
 				char* err = mkstrcpy(PQerrorMessage(conn));
 				PQclear(res);
