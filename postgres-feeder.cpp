@@ -8,6 +8,7 @@
 #include <sys/file.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 
 #define SYSERR(expr) (([&](){ const auto r = ((expr)); if( (long)r == -1L ) { throw #expr; } else return r; })())
 
@@ -71,6 +72,34 @@ class TPostgreSQL
 			PQclear(res);
 		}
 
+		void Copy(const void* const data, const int sz_data, const char* const sql, ...)
+		{
+			va_list list;
+			char buffer[256];
+
+			va_start(list, sql);
+			vsnprintf(buffer, sizeof(buffer), sql, list);
+			va_end(list);
+
+			PGresult* res = PQexec(conn, buffer);
+			if(verbose)
+				fprintf(stderr, "[PQ] %s\n", PQcmdStatus(res));
+
+			if(PQresultStatus(res) != PGRES_COPY_IN)
+			{
+				PQclear(res);
+				throw mkstrcpy(PQerrorMessage(conn));
+			}
+
+			if(PQputCopyData(conn, (const char*)data, sz_data) != 1)
+				throw "PQputCopyData() failed";
+
+			if(PQputCopyEnd(conn, nullptr) != 1)
+				throw "PQputCopyEnd() failed";
+
+			PQclear(res);
+		}
+
 		TPostgreSQL(const char* const connstr = "")
 		{
 			this->conn = PQconnectdb(connstr);
@@ -123,7 +152,9 @@ int main(int argc, char* argv[])
 
 			if(st.st_size > 0)
 			{
-				pq.Execute("BEGIN; COPY \"%s\" FROM STDIN WITH (FORMAT CSV, DELIMITER ';', QUOTE '\"', ESCAPE '\\'); COMMIT;", argv[1]);
+				const void* const buffer = SYSERR(mmap(nullptr, st.st_size, PROT_READ, MAP_SHARED|MAP_POPULATE, STDIN_FILENO, 0));
+				pq.Copy(buffer, st.st_size, "COPY \"%s\" FROM STDIN WITH (FORMAT CSV, DELIMITER ';', QUOTE '\"', ESCAPE '\\')", argv[1]);
+				SYSERR(munmap((void*)buffer, st.st_size));
 
 				SYSERR(lseek(STDIN_FILENO, SEEK_SET, 0));
 				SYSERR(ftruncate(STDIN_FILENO, 0));
