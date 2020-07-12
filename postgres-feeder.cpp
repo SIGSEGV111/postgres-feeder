@@ -87,15 +87,30 @@ class TPostgreSQL
 
 			if(PQresultStatus(res) != PGRES_COPY_IN)
 			{
+				char* err = mkstrcpy(PQerrorMessage(conn));
 				PQclear(res);
-				throw mkstrcpy(PQerrorMessage(conn));
+				throw err;
 			}
+
+			PQclear(res);
 
 			if(PQputCopyData(conn, (const char*)data, sz_data) != 1)
 				throw "PQputCopyData() failed";
 
 			if(PQputCopyEnd(conn, nullptr) != 1)
 				throw "PQputCopyEnd() failed";
+
+			res = PQgetResult(conn);
+
+			if(verbose)
+				fprintf(stderr, "[PQ] %s\n", PQcmdStatus(res));
+
+			if(PQresultStatus(res) != PGRES_COPY_IN)
+			{
+				char* err = mkstrcpy(PQerrorMessage(conn));
+				PQclear(res);
+				throw err;
+			}
 
 			PQclear(res);
 		}
