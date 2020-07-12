@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
 
 			if(st.st_size > 0)
 			{
-				pq.Execute("BEGIN; COPY \"%s\" FROM STDIN WITH FORMAT CSV DELIMITER ';' QUOTE '\"' ESCAPE '\\'; COMMIT;", argv[1]);
+				pq.Execute("BEGIN; COPY \"%s\" FROM STDIN WITH (FORMAT CSV, DELIMITER ';', QUOTE '\"', ESCAPE '\\'); COMMIT;", argv[1]);
 
 				SYSERR(lseek(STDIN_FILENO, SEEK_SET, 0));
 				SYSERR(ftruncate(STDIN_FILENO, 0));
